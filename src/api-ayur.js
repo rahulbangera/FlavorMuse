@@ -1,3 +1,4 @@
+
 const BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
 
 function norm(s) { return (s || "").trim().replace(/\s+/g, " "); }
