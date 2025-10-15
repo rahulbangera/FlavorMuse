@@ -15,11 +15,16 @@ export default function Landing() {
   }, [nav]);
 
   async function signInWithGoogle() {
+    const origin = window.location.origin; 
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: import.meta.env.VITE_REDIRECT_DASHBOARD, queryParams: { prompt: "select_account" } },
+      options: {
+        redirectTo: `${origin}/dashboard`,
+        queryParams: { prompt: "select_account" }
+      }
     });
   }
+
 
   function signInAsGuest() {
     localStorage.setItem("guest", "1");
