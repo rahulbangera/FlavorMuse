@@ -1,7 +1,7 @@
 {
-"$schema": "https://openapi.vercel.sh/vercel.json",
-"rewrites": [
-{ "source": "/ayur/:path*", "destination": "/api/ayur/:path*" },
-{ "source": "/(.*)", "destination": "/index.html" }
-]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/ayur/:path*", "destination": "/api/ayur/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

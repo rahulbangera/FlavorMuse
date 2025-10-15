@@ -1,8 +1,4 @@
-const dev = import.meta.env.DEV;
-const RAW_BASE = dev
-  ? "/ayur"
-  : (import.meta.env.VITE_AYUR_API_BASE || "https://ayur-analytics-6mthurpbxq-el.a.run.app");
-const BASE = RAW_BASE.replace(/\/+$/, "");
+const BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
 
 function norm(s) { return (s || "").trim().replace(/\s+/g, " "); }
 function title(s) { return s.replace(/\S+/g, w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()); }
@@ -14,7 +10,7 @@ export async function fetchAyurAll() {
   const j = await res.json();
   const names = Array.isArray(j) ? j
     : Array.isArray(j?.recipesList) ? j.recipesList
-      : [];
+    : [];
   const clean = Array.from(new Set(names.map(n => norm(String(n)))));
   return clean.sort((a, b) => a.localeCompare(b));
 }
@@ -51,17 +47,4 @@ export async function fetchAyurRecipeNormalized(name) {
     if (hit) return hit;
   }
   throw new Error(`Not found: ${raw}`);
-}
-export default async function handler(req, res) {
-  try {
-    const parts = Array.isArray(req.query.path) ? req.query.path : [req.query.path].filter(Boolean);
-    const tail = parts.join("/");
-    const url = "https://ayur-analytics-6mthurpbxq-el.a.run.app/${tail}";
-    const r = await fetch(url, { headers: { accept: "application/json" } });
-    const txt = await r.text();
-    res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
-    res.status(r.status).send(txt);
-  } catch (e) {
-    res.status(502).json({ error: "Proxy error", detail: String(e?.message || e) });
-  }
 }
