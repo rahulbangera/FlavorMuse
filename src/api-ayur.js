@@ -4,8 +4,8 @@ const RAW_BASE = dev
   : (import.meta.env.VITE_AYUR_API_BASE || "https://ayur-analytics-6mthurpbxq-el.a.run.app");
 const BASE = RAW_BASE.replace(/\/+$/, "");
 
-function norm(s){ return (s||"").trim().replace(/\s+/g," "); }
-function title(s){ return s.replace(/\S+/g, w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()); }
+function norm(s) { return (s || "").trim().replace(/\s+/g, " "); }
+function title(s) { return s.replace(/\S+/g, w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()); }
 
 export async function fetchAyurAll() {
   const url = `${BASE}/get/all`;
@@ -14,18 +14,18 @@ export async function fetchAyurAll() {
   const j = await res.json();
   const names = Array.isArray(j) ? j
     : Array.isArray(j?.recipesList) ? j.recipesList
-    : [];
+      : [];
   const clean = Array.from(new Set(names.map(n => norm(String(n)))));
-  return clean.sort((a,b)=>a.localeCompare(b));
+  return clean.sort((a, b) => a.localeCompare(b));
 }
 
-async function tryOnce(candidate){
+async function tryOnce(candidate) {
   const url = `${BASE}/get/${encodeURIComponent(candidate)}`;
   const res = await fetch(url, { headers: { accept: "application/json" } });
   if (!res.ok) return null;
   const j = await res.json();
   const ingredients = Array.isArray(j.keyIngredients)
-    ? j.keyIngredients.map(([img,label]) => ({ img, label }))
+    ? j.keyIngredients.map(([img, label]) => ({ img, label }))
     : [];
   const primaryImg = j.foodImage || (ingredients[0]?.img || "");
   const desc = j.foodDescription || `${j.foodName || candidate} — description not available.`;
@@ -37,14 +37,14 @@ async function tryOnce(candidate){
   };
 }
 
-export async function fetchAyurRecipeNormalized(name){
+export async function fetchAyurRecipeNormalized(name) {
   const raw = norm(name);
   const variants = Array.from(new Set([
     raw,
     raw.toLowerCase(),
     title(raw),
-    raw.toLowerCase().replace(/\s+/g,"-"),
-    raw.toLowerCase().replace(/\s+/g,"_")
+    raw.toLowerCase().replace(/\s+/g, "-"),
+    raw.toLowerCase().replace(/\s+/g, "_")
   ])).filter(Boolean);
   for (const v of variants) {
     const hit = await tryOnce(v);
@@ -54,16 +54,14 @@ export async function fetchAyurRecipeNormalized(name){
 }
 export default async function handler(req, res) {
   try {
-    const parts = Array.isArray(req.query.name) ? req.query.name : [req.query.name].filter(Boolean);
-    const tail = parts.join("/"); // e.g., "get/masala%20dosa" if rewrite passes "get/:name"
-    const url = `https://ayur-analytics-6mthurpbxq-el.a.run.app/${tail}`;
+    const parts = Array.isArray(req.query.path) ? req.query.path : [req.query.path].filter(Boolean);
+    const tail = parts.join("/");
+    const url = "https://ayur-analytics-6mthurpbxq-el.a.run.app/${tail}";
     const r = await fetch(url, { headers: { accept: "application/json" } });
     const txt = await r.text();
     res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
-    res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(r.status).send(txt);
   } catch (e) {
-    res.setHeader("Access-Control-Allow-Origin", "*");
     res.status(502).json({ error: "Proxy error", detail: String(e?.message || e) });
   }
 }
