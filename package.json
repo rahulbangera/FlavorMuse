@@ -21,5 +21,16 @@
     "postcss": "8.4.47",
     "tailwindcss": "^4.0.0",
     "vite": "^7.1.10"
-  }
+  },
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/ayur/:path*",
+      "destination": "/api/ayur/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

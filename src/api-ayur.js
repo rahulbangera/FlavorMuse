@@ -52,3 +52,18 @@ export async function fetchAyurRecipeNormalized(name){
   }
   throw new Error(`Not found: ${raw}`);
 }
+export default async function handler(req, res) {
+  try {
+    const parts = Array.isArray(req.query.name) ? req.query.name : [req.query.name].filter(Boolean);
+    const tail = parts.join("/"); // e.g., "get/masala%20dosa" if rewrite passes "get/:name"
+    const url = `https://ayur-analytics-6mthurpbxq-el.a.run.app/${tail}`;
+    const r = await fetch(url, { headers: { accept: "application/json" } });
+    const txt = await r.text();
+    res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(r.status).send(txt);
+  } catch (e) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(502).json({ error: "Proxy error", detail: String(e?.message || e) });
+  }
+}
