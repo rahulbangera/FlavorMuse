@@ -15,7 +15,7 @@ export default function Landing() {
   }, [nav]);
 
   async function signInWithGoogle() {
-    const origin = window.location.origin; 
+    const origin = window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -24,7 +24,6 @@ export default function Landing() {
       }
     });
   }
-
 
   function signInAsGuest() {
     localStorage.setItem("guest", "1");

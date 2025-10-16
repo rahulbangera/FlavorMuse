@@ -7,10 +7,6 @@ import About from "./pages/About.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import RecipeDetail from "./pages/RecipeDetail.jsx";
 import Favorites from "./pages/Favorites.jsx";
-import Contact from "./pages/Contact.jsx";
-import Terms from "./pages/Terms.jsx";
-import Privacy from "./pages/Privacy.jsx";
-
 
 export default function App() {
   return (
@@ -24,10 +20,6 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/recipe/:name" element={<RecipeDetail />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-
           </Route>
           <Route path="*" element={<div className="p-16 text-center">Not found</div>} />
         </Routes>

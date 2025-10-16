@@ -11,7 +11,7 @@ export async function fetchAyurAll() {
   const j = await res.json();
   const names = Array.isArray(j) ? j
     : Array.isArray(j?.recipesList) ? j.recipesList
-    : [];
+      : [];
   const clean = Array.from(new Set(names.map(n => norm(String(n)))));
   return clean.sort((a, b) => a.localeCompare(b));
 }

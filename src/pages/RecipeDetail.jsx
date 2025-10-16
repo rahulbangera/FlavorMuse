@@ -27,7 +27,7 @@ export default function RecipeDetail() {
     })();
     const off = onFavoritesChange(() => { if (data) setFav(isFavorite(data.name)); });
     return () => { alive = false; off?.(); };
-  }, [name]); // data refreshes once loaded
+  }, [name]);
 
   function onToggle() {
     if (!data) return;
