@@ -5,6 +5,6 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/ayur/**": { "maxDuration": 15 }
+    "api/ayur/[...path].js": { "maxDuration": 15 }
   }
 }
