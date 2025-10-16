@@ -1,8 +1,6 @@
-// api/ayur/[...path].js
 const UPSTREAM = "https://ayur-analytics-6mthurpbxq-el.a.run.app";
 
 export default async function handler(req, res) {
-  // Optional CORS/preflight support
   if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
@@ -18,7 +16,7 @@ export default async function handler(req, res) {
 
   try {
     const segs = Array.isArray(req.query.path) ? req.query.path : [req.query.path].filter(Boolean);
-    const tail = segs.join("/"); // e.g., "get/all" or "get/masala%20dosa"
+    const tail = segs.join("/");
     if (!tail) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       return res.status(400).json({ error: "Missing path" });

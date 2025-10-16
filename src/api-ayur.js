@@ -1,9 +1,6 @@
-// src/api-ayur.js
-const ENV_BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
-const EXTERNAL_BASE = "https://ayur-analytics-6mthurpbxq-el.a.run.app";
+const BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
 const DEFAULT_HEADERS = { accept: "application/json" };
 const TIMEOUT_MS = 12000;
-let RESOLVED_BASE = null;
 
 function norm(s) { return (s || "").trim().replace(/\s+/g, " "); }
 function title(s) { return s.replace(/\S+/g, w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()); }
@@ -14,28 +11,8 @@ function withTimeout(init = {}) {
   return { init: { ...init, signal: ctrl.signal }, done: () => clearTimeout(tid) };
 }
 
-async function probeBase(base) {
-  const { init, done } = withTimeout({ headers: DEFAULT_HEADERS });
-  try {
-    const res = await fetch(`${base.replace(/\/+$/, "")}/get/all`, init);
-    const ctype = res.headers.get("content-type") || "";
-    return res.ok && /application\/json/i.test(ctype);
-  } catch { return false; } finally { done(); }
-}
-
-async function getBase() {
-  if (RESOLVED_BASE) return RESOLVED_BASE;
-  if (await probeBase(ENV_BASE)) { RESOLVED_BASE = ENV_BASE; return RESOLVED_BASE; }
-  // Fallback (can be CORS-blocked if called directly from browser; keep VITE_API_BASE_URL=/ayur in prod)
-  RESOLVED_BASE = EXTERNAL_BASE;
-  return RESOLVED_BASE;
-}
-
 async function fetchText(url, options = {}) {
-  const { init, done } = withTimeout({
-    ...options,
-    headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) }
-  });
+  const { init, done } = withTimeout({ ...options, headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) } });
   try {
     const res = await fetch(url, init);
     const ctype = res.headers.get("content-type") || "";
@@ -60,42 +37,31 @@ function adaptRecipe(j, candidateName) {
 }
 
 export async function fetchAyurAll() {
-  const base = await getBase();
-  const j = await fetchJSON(`${base}/get/all`);
+  const j = await fetchJSON(`${BASE}/get/all`);
   const names = Array.isArray(j) ? j : Array.isArray(j?.recipesList) ? j.recipesList : [];
-  const clean = Array.from(new Set(names.map(n => norm(String(n)))));
+  const clean = Array.from(new Set(names.map(n => (n ?? "").toString().trim().replace(/\s+/g, " "))));
   return clean.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 async function tryOnce(candidate) {
-  const base = await getBase();
   try {
-    const j = await fetchJSON(`${base}/get/${encodeURIComponent(candidate)}`);
+    const j = await fetchJSON(`${BASE}/get/${encodeURIComponent(candidate)}`);
     return adaptRecipe(j, candidate);
   } catch { return null; }
 }
 
 export async function fetchAyurRecipeNormalized(name) {
-  const raw = norm(name);
+  const raw = (name ?? "").toString().trim().replace(/\s+/g, " ");
   const variants = Array.from(new Set([
-    raw, raw.toLowerCase(), title(raw),
+    raw,
+    raw.toLowerCase(),
+    title(raw),
     raw.toLowerCase().replace(/\s+/g, "-"),
     raw.toLowerCase().replace(/\s+/g, "_"),
   ])).filter(Boolean);
-
   for (const v of variants) {
     const hit = await tryOnce(v);
     if (hit) return hit;
   }
   throw new Error(`Not found: ${raw}`);
-}
-
-export async function fetchAyurRecipeCore(name) {
-  const hit = await tryOnce(norm(name));
-  if (hit) return hit;
-  throw new Error(`Not found: ${name}`);
-}
-
-export async function getAyurApiBase() {
-  return await getBase();
 }
