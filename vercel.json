@@ -1,18 +1,18 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    {
-      "source": "/ayur/:path*",
-      "destination": "/api/ayur/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "functions": {
-    "api/**": {
-      "maxDuration": 15
-    }
-  }
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"rewrites": [
+		{
+			"source": "/ayur/:path*",
+			"destination": "/api/ayur/:path*"
+		},
+		{
+			"source": "/(.*)",
+			"destination": "/index.html"
+		}
+	],
+	"functions": {
+		"api/**/*.js": {
+			"runtime": "nodejs18.x"
+		}
+	}
 }
