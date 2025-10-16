@@ -1,3 +1,4 @@
+// src/api-ayur.js
 const ENV_BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
 const EXTERNAL_BASE = "https://ayur-analytics-6mthurpbxq-el.a.run.app";
 const DEFAULT_HEADERS = { accept: "application/json" };
@@ -25,20 +26,24 @@ async function probeBase(base) {
 async function getBase() {
   if (RESOLVED_BASE) return RESOLVED_BASE;
   if (await probeBase(ENV_BASE)) { RESOLVED_BASE = ENV_BASE; return RESOLVED_BASE; }
-  RESOLVED_BASE = EXTERNAL_BASE; return RESOLVED_BASE;
+  // Fallback (can be CORS-blocked if called directly from browser; keep VITE_API_BASE_URL=/ayur in prod)
+  RESOLVED_BASE = EXTERNAL_BASE;
+  return RESOLVED_BASE;
 }
 
 async function fetchText(url, options = {}) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const { init, done } = withTimeout({
+    ...options,
+    headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) }
+  });
   try {
-    const res = await fetch(url, { ...options, headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) }, signal: ctrl.signal });
+    const res = await fetch(url, init);
     const ctype = res.headers.get("content-type") || "";
     const body = await res.text();
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`);
     if (!/application\/json/i.test(ctype)) throw new Error(`Non-JSON response at ${url}: ${body.slice(0, 200)}`);
     return body;
-  } finally { clearTimeout(tid); }
+  } finally { done(); }
 }
 
 async function fetchJSON(url, options) {
@@ -77,6 +82,7 @@ export async function fetchAyurRecipeNormalized(name) {
     raw.toLowerCase().replace(/\s+/g, "-"),
     raw.toLowerCase().replace(/\s+/g, "_"),
   ])).filter(Boolean);
+
   for (const v of variants) {
     const hit = await tryOnce(v);
     if (hit) return hit;
@@ -90,4 +96,6 @@ export async function fetchAyurRecipeCore(name) {
   throw new Error(`Not found: ${name}`);
 }
 
-export async function getAyurApiBase() { return await getBase(); }
+export async function getAyurApiBase() {
+  return await getBase();
+}
