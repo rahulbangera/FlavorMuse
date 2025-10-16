@@ -1,31 +1,61 @@
-const BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
+const ENV_BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
+const EXTERNAL_BASE = "https://ayur-analytics-6mthurpbxq-el.a.run.app";
 const DEFAULT_HEADERS = { accept: "application/json" };
 const TIMEOUT_MS = 12000;
+
+let RESOLVED_BASE = null;
 
 function norm(s) { return (s || "").trim().replace(/\s+/g, " "); }
 function title(s) { return s.replace(/\S+/g, w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()); }
 
-async function fetchText(url, options = {}) {
+function withTimeout(init = {}) {
   const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  return { init: { ...init, signal: ctrl.signal }, done: () => clearTimeout(tid) };
+}
+
+async function probeBase(base) {
+  const { init, done } = withTimeout({ headers: DEFAULT_HEADERS });
   try {
-    const res = await fetch(url, {
-      ...options,
-      headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) },
-      signal: ctrl.signal,
-    });
+    const res = await fetch(`${base.replace(/\/+$/, "")}/get/all`, init);
+    const ctype = res.headers.get("content-type") || "";
+    if (res.ok && /application\/json/i.test(ctype)) return true;
+    return false;
+  } catch {
+    return false;
+  } finally {
+    done();
+  }
+}
+
+async function getBase() {
+  if (RESOLVED_BASE) return RESOLVED_BASE;
+
+  if (await probeBase(ENV_BASE)) {
+    RESOLVED_BASE = ENV_BASE.replace(/\/+$/, "");
+    return RESOLVED_BASE;
+  }
+  RESOLVED_BASE = EXTERNAL_BASE.replace(/\/+$/, "");
+  return RESOLVED_BASE;
+}
+
+async function fetchText(url, options = {}) {
+  const { init, done } = withTimeout({
+    ...options,
+    headers: { ...DEFAULT_HEADERS, ...(options.headers || {}) }
+  });
+  try {
+    const res = await fetch(url, init);
     const ctype = res.headers.get("content-type") || "";
     const body = await res.text();
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`);
-    }
-    if (!/application\/json/i.test(ctype)) {
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${body.slice(0, 200)}`);
+    if (!/application\/json/i.test(ctype))
       throw new Error(`Non-JSON response at ${url}: ${body.slice(0, 200)}`);
-    }
+
     return body;
   } finally {
-    clearTimeout(id);
+    done();
   }
 }
 
@@ -49,8 +79,8 @@ function adaptRecipe(j, candidateName) {
 }
 
 export async function fetchAyurAll() {
-  const url = `${BASE}/get/all`;
-  const j = await fetchJSON(url);
+  const base = await getBase();
+  const j = await fetchJSON(`${base}/get/all`);
 
   const names = Array.isArray(j) ? j
     : Array.isArray(j?.recipesList) ? j.recipesList
@@ -61,9 +91,9 @@ export async function fetchAyurAll() {
 }
 
 async function tryOnce(candidate) {
-  const url = `${BASE}/get/${encodeURIComponent(candidate)}`;
+  const base = await getBase();
   try {
-    const j = await fetchJSON(url);
+    const j = await fetchJSON(`${base}/get/${encodeURIComponent(candidate)}`);
     return adaptRecipe(j, candidate);
   } catch {
     return null;
@@ -91,4 +121,8 @@ export async function fetchAyurRecipeCore(name) {
   const hit = await tryOnce(norm(name));
   if (hit) return hit;
   throw new Error(`Not found: ${name}`);
+}
+
+export async function getAyurApiBase() {
+  return await getBase();
 }
