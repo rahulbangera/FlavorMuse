@@ -1,4 +1,4 @@
-const BASE = (import.meta.env.VITE_API_BASE_URL || "/ayur").replace(/\/+$/, "");
+const BASE = (import.meta.env.VITE_AYUR_API_BASE || "/ayur").replace(/\/+$/, "");
 const DEFAULT_HEADERS = { accept: "application/json" };
 const TIMEOUT_MS = 12000;
 
